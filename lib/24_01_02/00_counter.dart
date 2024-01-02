@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_chobo_class/24_01_02/00_counter_next.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(CounterProvider(
+    counter: CounterViewModel(),
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {
@@ -20,50 +24,82 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final viewModel = CounterProvider.of(context).counter;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text(title),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const CounterNextScreen()),
+              );
+            },
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+      body: ListenableBuilder(
+        listenable: viewModel,
+        builder: (BuildContext context, Widget? child) {
+          return Center(
+            child: Column(
+              children: [
+                const Text(
+                  'You have ~',
+                ),
+                Text('${CounterProvider.of(context).counter.count}'),
+              ],
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () {
+          CounterProvider.of(context).counter.increment();
+        },
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+}
+
+class CounterProvider extends InheritedWidget {
+  final CounterViewModel counter;
+
+  const CounterProvider({
+    super.key,
+    required this.counter,
+    required super.child,
+  });
+
+  static CounterProvider of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<CounterProvider>()!;
+  }
+
+  @override
+  bool updateShouldNotify(CounterProvider oldWidget) {
+    return counter.count != oldWidget.counter.count;
+  }
+}
+
+class CounterViewModel extends ChangeNotifier {
+  var count = 0;
+
+  void increment() {
+    count++;
+    notifyListeners();
   }
 }
